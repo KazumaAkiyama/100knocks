@@ -3,7 +3,7 @@ import sys
 #ファイルの読み込み
 names_file = open("popular-names.txt", 'r')
 #実行時の引数で分割数を指定する
-split_line_num = int(sys.argv[1])
+file_num = int(sys.argv[1])
 #全部で何行あるか
 line_count = 0
 
@@ -11,7 +11,7 @@ line_count = 0
 with open("popular-names.txt", 'r') as f:
     for line in f:
         line_count += 1
-file_num = int(line_count / split_line_num)
+split_line_num = int(line_count / file_num)
 
 #1ファイルごとの行数分繰り返す
 for i in range(file_num):
