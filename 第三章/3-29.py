@@ -25,3 +25,5 @@ file_name = basic_info_dict["国旗画像"].replace(" ", "_")
 url = 'https://commons.wikimedia.org/w/api.php?action=query&titles=File:' + file_name + '&prop=imageinfo&iiprop=url&format=json'
 file_data = requests.get(url)
 print(re.search(r'"url":"(.+?)"', file_data.text).group(1))
+
+#https://upload.wikimedia.org/wikipedia/commons/a/ae/Flag_of_the_United_Kingdom.svg
