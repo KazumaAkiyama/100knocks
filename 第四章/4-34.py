@@ -18,9 +18,12 @@ def read_mecab():
     return sentences
 
 sentences = read_mecab()
+#名詞の連接を格納するリスト
 link_nouns = []
 
+#名詞の連接を一時保管するリスト
 link_noun = []
+#名詞が続く間はリストに足していって，名詞以外が出たときに連接が2以上なら採用
 for sentence in sentences:
     for morph in sentence:
         if morph["pos"] == "名詞":
@@ -31,6 +34,7 @@ for sentence in sentences:
         else:
             link_noun = []
 
+#10行目まで表示
 for i in range(10):
     print(link_nouns[i])
 
