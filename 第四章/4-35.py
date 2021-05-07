@@ -20,13 +20,16 @@ def read_mecab():
     return sentences
 
 sentences = read_mecab()
+#2重ループをまわしてmorphのsurfaceを全部格納し，surfaceのリストをつくる
 surfaces = [
     morph["surface"]
     for sentence in sentences
     for morph in sentence
 ]
+#Counterで出現頻度の辞書を作成後，most_commonで出現頻度順に並べたリストにする
 freq_of_appear = collections.Counter(surfaces).most_common()
 
+#10行目まで表示
 for _,(word, freq) in zip(range(10), freq_of_appear):
     print(surface, freq)
 

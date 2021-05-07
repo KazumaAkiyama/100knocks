@@ -22,17 +22,25 @@ def read_mecab():
     return sentences
 
 sentences = read_mecab()
+#「猫」と共起している単語のリスト
 cat_co_occure = []
+
 for sentence in sentences:
+    #「猫」を含む文をみつけたら
     if "猫" in [morph['surface'] for morph in sentence]:
+        #「猫」以外の名詞，動詞，形容詞，副詞をリストに格納する
         words = [
             morph["surface"]
             for morph in sentence
             if morph["surface"] != "猫" and morph["pos"] in {"名詞", "動詞", "形容詞", "副詞"}
         ]
+        #共起している単語としてリストに格納
         cat_co_occure.extend(words)
+
+#Counterで出現頻度の辞書を作成後，most_commonで出現頻度順に並べたリストにする
 cat_co_occure = collections.Counter(cat_co_occure).most_common()
 
+#単語のリスト，出現頻度のリストをそれぞれ作成し，グラフに適用
 words = [word for word,_ in cat_co_occure[:10]]
 freqs = [freq for _,freq in cat_co_occure[:10]]
 plt.bar(words, freqs)
@@ -40,6 +48,7 @@ plt.xlabel('「猫」と共起頻度の高い上位10語')
 plt.ylabel('出現頻度')
 plt.show()
 
+#一応10行目まで表示
 for i, key, value in zip(range(10), words, freqs):
     print(key, value)
 
