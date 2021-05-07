@@ -22,14 +22,18 @@ def read_mecab():
     return sentences
 
 sentences = read_mecab()
+#2重ループをまわしてmorphのbaseを全部格納し，baseのリストをつくる
 words = [
     morph["base"]
     for sentence in sentences
     for morph in sentence 
 ]
+#Counterで出現頻度の辞書を作成後，most_commonで出現頻度順に並べたリストにする
 word_freq = collections.Counter(words).most_common()
+#出現頻度のリストを作成
 freqs = [freq for _,freq in word_freq]
 
+#x,y軸をlogスケールに変換し，freqsを用いてグラフを作成
 plt.xscale("log")
 plt.yscale("log")
 plt.xlabel("出現頻度順位")
