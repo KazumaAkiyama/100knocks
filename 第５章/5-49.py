@@ -70,7 +70,6 @@ with open("ai.ja.txt.parsed") as f:
 sentence_list = list(filter(lambda x: x != '', sentence_list))
 sentence_list = [read_cabocha(sentence) for sentence in sentence_list]
 
-
 for sentence in sentence_list:
     pl = (convert(sentence))
     for p in pl:
