@@ -47,8 +47,8 @@ with open("ai.ja.txt.parsed") as f:
     sentence_list = f.read().split('EOS\n')
 sentence_list = list(filter(lambda x: x != '', sentence_list))
 sentence_list = [read_cabocha(sentence) for sentence in sentence_list]
-for m in sentence_list[1]:
-    print([mo.surface for mo in m.morph_list], m.dst, m.srcs)
+for chunk in sentence_list[1]:
+    print([morph.surface for morph in chunk.morph_list], chunk.dst, chunk.srcs)
 
 """
 ['人工', '知能'] 17 []
