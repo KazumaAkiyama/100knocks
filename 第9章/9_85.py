@@ -16,6 +16,7 @@ class BiRNN(nn.Module):
     def __init__(self, v_size, e_size, h_size, c_size, dropout=0.2):
         super(BiRNN, self).__init__()
         self.embed = nn.Embedding(v_size, e_size)
+        #層を増やして，双方向化のフラグをTrueにする
         self.rnn = nn.LSTM(e_size, h_size, num_layers = 2, bidirectional = True)
         self.out = nn.Linear(h_size * 2, c_size)
         self.dropout = nn.Dropout(dropout)
@@ -29,9 +30,6 @@ class BiRNN(nn.Module):
         x = self.embed(batch['inputs'])
         x = pack(x, batch['lengths'])
         x, (h, c) = self.rnn(x, h)
-        h = h[-2:]
-        h = h.transpose(0,1)
-        h = h.contiguous().view(-1, h.size(1) * h.size(2))
         h = self.out(h)
         return h
 
@@ -95,3 +93,12 @@ print('学習データでの正解率 :', accuracy(train_labels, pred))
 predictor = Predictor(model, gen_loader(test_dataset, 1))
 pred = predictor.predict()
 print('評価データでの正解率 :', accuracy(test_labels, pred))
+
+"""
+tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+epoch 1, train_loss:1.1292495205768271, valid_loss:1.0101736069283682
+epoch 2, train_loss:0.8174852227875312, valid_loss:0.7065479045001308
+epoch 3, train_loss:0.5824349788022366, valid_loss:0.5465920687963565
+学習データでの正解率 : 0.8380606514414077
+評価データでの正解率 : 0.8049101796407185
+"""
