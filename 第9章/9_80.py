@@ -70,6 +70,8 @@ with open('test.ids.pickle', 'wb') as f:
 with open('test.label.pickle', 'wb') as f:
     pickle.dump(test_labels, f)
 
+with open('word_list.pickle', 'wb') as f:
+    pickle.dump(word_list, f)
 with open('word_dict.pickle', 'wb') as f:
     pickle.dump(word_dict, f)
 
