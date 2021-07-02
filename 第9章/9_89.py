@@ -101,3 +101,12 @@ print('学習データでの正解率 :', accuracy(train_labels, pred))
 predictor = Predictor(model, gen_loader(test_dataset, 1))
 pred = predictor.predict()
 print('評価データでの正解率 :', accuracy(test_labels, pred))
+
+"""
+tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+epoch 1, train_loss:1.1292495205768271, valid_loss:1.0101736069283682
+epoch 2, train_loss:0.8174852227875312, valid_loss:0.7065479045001308
+epoch 3, train_loss:0.5824349788022366, valid_loss:0.5465920687963565
+学習データでの正解率 : 0.8480606514414077
+評価データでの正解率 : 0.8249101796407185
+"""
