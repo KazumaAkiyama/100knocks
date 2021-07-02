@@ -241,11 +241,13 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
 import time
 import math
 
+#時間を分秒の単位に直す
 def asMinutes(s):
     m = math.floor(s / 60)
     s -= m * 60
     return '%dm %ds' % (m, s)
 
+#経過時間と残りの推定時間を計算する
 def timeSince(since, percent):
     now = time.time()
     s = now - since
@@ -253,16 +255,22 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
+#イテレータを回して学習を行う
 def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
+    #タイマーを開始
     start = time.time()
-    print_loss_total = 0  # Reset every print_every
+    print_loss_total = 0
 
+    #エンコーダとデコーダーのオプティマイザを宣言
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    #ランダムなペアをとってきてテンソルにする
     training_pairs = [tensorsFromPair(random.choice(pairs))
                       for i in range(n_iters)]
+    #損失関数の定義
     criterion = nn.NLLLoss()
 
+    #ペアデータから入力・正解データを取り出し，trainにわたす
     for iter in range(1, n_iters + 1):
         training_pair = training_pairs[iter - 1]
         input_tensor = training_pair[0]
@@ -272,12 +280,14 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
                      decoder, encoder_optimizer, decoder_optimizer, criterion)
         print_loss_total += loss
 
+        #print_everyごと(ここでは5000)に経過時間やロスの出力を行う
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
                                          iter, iter / n_iters * 100, print_loss_avg))
 
+#評価用関数．各ステップでデコーダーが出した予測を自身にフィードバックする
 def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     with torch.no_grad():
         input_tensor = tensorFromSentence(input_lang, sentence)
@@ -295,6 +305,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
 
         decoder_hidden = encoder_hidden
 
+        #デコーダーが出力(予測)した単語を文字リストに追加していく．EOSなら終了
         decoded_words = []
         decoder_attentions = torch.zeros(max_length, max_length)
 
@@ -313,6 +324,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
 
         return decoded_words, decoder_attentions[:di + 1]
 
+#ランダムにとってきたペアデータについて，入力・正解・予測データを出力
 def evaluateRandomly(encoder, decoder, n=10):
     for i in range(n):
         pair = random.choice(pairs)
@@ -333,3 +345,68 @@ evaluateRandomly(encoder,attn_decoder,10)
 
 torch.save(encoder.state_dict(), 'encoder_weights.pth')
 torch.save(attn_decoder.state_dict(), 'attn_decoder_weight.pth')
+
+"""
+Reading lines...
+Read 329882 sentence pairs
+Trimmed to 67831 sentence pairs
+Counting words...
+Counted words:
+kftt-data-1.0/data/tok/kyoto-train.cln.ja 34123
+kftt-data-1.0/data/tok/kyoto-train.cln.en 32109
+['三 町 ( 高山 市 )', 'sanmachi takayama city ']
+1m 54s (- 26m 38s) (5000 6%) 5.4597
+3m 35s (- 23m 22s) (10000 13%) 5.1825
+5m 33s (- 22m 13s) (15000 20%) 4.9647
+7m 32s (- 20m 44s) (20000 26%) 4.7513
+9m 30s (- 19m 1s) (25000 33%) 4.5814
+11m 22s (- 17m 4s) (30000 40%) 4.5173
+13m 20s (- 15m 15s) (35000 46%) 4.3782
+15m 19s (- 13m 24s) (40000 53%) 4.3756
+17m 9s (- 11m 26s) (45000 60%) 4.2520
+18m 59s (- 9m 29s) (50000 66%) 4.2188
+20m 59s (- 7m 38s) (55000 73%) 4.1170
+22m 47s (- 5m 41s) (60000 80%) 4.0610
+24m 20s (- 3m 44s) (65000 86%) 4.0637
+26m 1s (- 1m 51s) (70000 93%) 3.9671
+28m 2s (- 0m 0s) (75000 100%) 3.8737
+> 建久 年中 検田 帳
+= the kenkyu era cadastral survey records
+< the and in in <EOS>
+
+> 土岐 光 衡 の 長男 。
+= the eldest son of mitsuhira toki
+< the eldest son of the <EOS>
+
+> キリン （ 「 清水 」 「 未来 」 ）
+= giraffe kiyomizu and mirai
+<  the  <EOS>
+
+> 乾物 の 一種 。
+= it is a type of dry food .
+< a are of of <EOS>
+
+> 薬味 と し て 用い て い る 。
+= it is used as a seasoning .
+< it is a . . <EOS>
+
+> 大神 神社
+= omiwa jinja shrine
+< shrine jinja shrine <EOS>
+
+> （ この 項 未 執筆 ）
+=  this section is not written yet
+<   the <EOS>
+
+> チベット 語 訳
+= translation into tibetan
+< translation translation <EOS>
+
+> （ → “ 主な 会派 ” ）
+=  major factions
+<  the  <EOS>
+
+> a
+= a kiritsubo tsubosenzai
+< a a a a a a a a <EOS>
+"""
