@@ -39,7 +39,7 @@ def init_embed(embed):
             embed.weight.data[i] = torch.from_numpy(trained_vectors[token])
     return embed
 
-class CNNDataset(Dataset):
+class CNNDataset(newDataset):
     def collate(self, xs):
         max_seq_len = max([x['lengths'] for x in xs])
         inputs = [torch.cat([x['inputs'], torch.zeros(max_seq_len - x['lengths'], dtype=torch.long)], dim=-1) for x in xs]
@@ -52,18 +52,16 @@ class CNNDataset(Dataset):
             'mask':mask,
         }
 
-train_dataset = CNNDataset(train_ids, train_labels)
-valid_dataset = CNNDataset(train_ids, train_labels)
-test_dataset = CNNDataset(test_ids, test_labels)
-
 class CNN(nn.Module):
     def __init__(self, v_size, e_size, h_size, c_size, dropout=0.2):
         super(CNN, self).__init__()
         self.embed = nn.Embedding(v_size, e_size)
-        self.conv = nn.Conv1d(e_size, h_size, 3, padding=1)
+        #カーネルを3に.paddingを1で指定するとpaddingトークンが両端に挿入される
+        self.conv = nn.Conv2d(e_size, h_size, (3, emb_size), 1, (1, 0))
         self.act = nn.ReLU()
         self.out = nn.Linear(h_size, c_size)
         self.dropout = nn.Dropout(dropout)
+        #重みを正規分布で，バイアスを０で初期化
         nn.init.normal_(self.embed.weight, 0, 0.1)
         nn.init.kaiming_normal_(self.conv.weight)
         nn.init.constant_(self.conv.bias, 0)
