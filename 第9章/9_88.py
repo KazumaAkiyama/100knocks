@@ -4,8 +4,12 @@ import torch
 from torch import nn
 from torch.utils.data import TensorDataset, Dataset, DataLoader
 import torch.optim as optim
+from torch.nn.utils.rnn import pad_sequence as pad
+from torch.nn.utils.rnn import pack_padded_sequence as pack
+from torch.nn.utils.rnn import pad_packed_sequence as unpack
 import pickle
 from gensim.models import KeyedVectors
+import optuna
 
 with open('train.ids.pickle', 'rb') as f:
     train_ids = pickle.load(f)
@@ -31,15 +35,7 @@ with open('word_list.pickle', 'rb') as f:
 with open('word_dict.pickle', 'rb') as f:
     word_dict = pickle.load(f)
 
-trained_vectors = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin.gz', binary=True)
-
-def init_embed(embed):
-    for i, token in enumerate(word_list):
-        if token in trained_vectors:
-            embed.weight.data[i] = torch.from_numpy(trained_vectors[token])
-    return embed
-
-class CNNDataset(Dataset):
+class CNNDataset(newDataset):
     def collate(self, xs):
         max_seq_len = max([x['lengths'] for x in xs])
         inputs = [torch.cat([x['inputs'], torch.zeros(max_seq_len - x['lengths'], dtype=torch.long)], dim=-1) for x in xs]
@@ -52,18 +48,16 @@ class CNNDataset(Dataset):
             'mask':mask,
         }
 
-train_dataset = CNNDataset(train_ids, train_labels)
-valid_dataset = CNNDataset(train_ids, train_labels)
-test_dataset = CNNDataset(test_ids, test_labels)
-
 class CNN(nn.Module):
     def __init__(self, v_size, e_size, h_size, c_size, dropout=0.2):
         super(CNN, self).__init__()
         self.embed = nn.Embedding(v_size, e_size)
-        self.conv = nn.Conv1d(e_size, h_size, 5, padding=1)
+        #カーネルを3に.paddingを1で指定するとpaddingトークンが両端に挿入される
+        self.conv = nn.Conv2d(e_size, h_size, (3, emb_size), 1, (1, 0))
         self.act = nn.ReLU()
         self.out = nn.Linear(h_size, c_size)
         self.dropout = nn.Dropout(dropout)
+        #重みを正規分布で，バイアスを０で初期化
         nn.init.normal_(self.embed.weight, 0, 0.1)
         nn.init.kaiming_normal_(self.conv.weight)
         nn.init.constant_(self.conv.bias, 0)
@@ -85,9 +79,35 @@ train_dataset = CNNDataset(train_ids, train_labels)
 valid_dataset = CNNDataset(valid_ids, valid_labels)
 test_dataset = CNNDataset(test_ids, test_labels)
 
-model = CNN(len(word_dict), 4000, 1024, 4)
+#正解率の計算をする
+def accuracy(true, pred):
+    return np.mean([t == p for t, p in zip(true, pred)])
 
-init_embed(model.embed)
+def objective(trial):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    e_size = int(trial.suggest_discrete_uniform('e_size', 100, 4000, 100))
+    h_size = int(trial.suggest_discrete_uniform('h_size', 100, 1000, 100))
+    dropout = float(trial.suggest_discrete_uniform('dropout', 0.1, 0.5, 0.1))
+    model = CNN(len(word_dict), e_size, h_size, 4, dropout)
+
+    loaders = (
+        gen_descending_loader(train_dataset, 128),
+        gen_descending_loader(valid_dataset, 128),
+    )
+    task = Task()
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    trainer = Trainer(model, loaders, task, optimizer, 10)
+    trainer.train()
+    trainer.test()
+    predictor = Predictor(model, gen_loader(train_dataset, 1))
+    pred = predictor.predict()
+    return 1- accuracy(test_labels, pred)
+
+study = optuna.create_study()
+study.optimize(objective, n_trials = 100)
+print(study.best_params)
+
+model = CNN(len(word_dict), study.best_params["e_size"], study.best_params["h_size"], 4, study.best_params["dropout"])
 
 loaders = (
     gen_descending_loader(train_dataset, 128),
@@ -98,9 +118,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 trainer = Trainer(model, loaders, task, optimizer, 10)
 trainer.train()
 
-#正解率の計算をする
-def accuracy(true, pred):
-    return np.mean([t == p for t, p in zip(true, pred)])
+
 
 predictor = Predictor(model, gen_loader(train_dataset, 1))
 pred = predictor.predict()
